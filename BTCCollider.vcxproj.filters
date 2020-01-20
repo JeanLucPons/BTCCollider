@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Base58.cpp" />
+    <ClCompile Include="Bech32.cpp" />
+    <ClCompile Include="HashTable.cpp" />
+    <ClCompile Include="Int.cpp" />
+    <ClCompile Include="IntGroup.cpp" />
+    <ClCompile Include="IntMod.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Point.cpp" />
+    <ClCompile Include="Random.cpp" />
+    <ClCompile Include="SECP256K1.cpp" />
+    <ClCompile Include="Timer.cpp" />
+    <ClCompile Include="BTCCollider.cpp" />
+    <ClCompile Include="hash\sha512.cpp">
+      <Filter>Hash</Filter>
+    </ClCompile>
+    <ClCompile Include="hash\sha256_sse.cpp">
+      <Filter>Hash</Filter>
+    </ClCompile>
+    <ClCompile Include="hash\sha256.cpp">
+      <Filter>Hash</Filter>
+    </ClCompile>
+    <ClCompile Include="hash\ripemd160_sse.cpp">
+      <Filter>Hash</Filter>
+    </ClCompile>
+    <ClCompile Include="hash\ripemd160.cpp">
+      <Filter>Hash</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Base58.h" />
+    <ClInclude Include="Bech32.h" />
+    <ClInclude Include="HashTable.h" />
+    <ClInclude Include="Int.h" />
+    <ClInclude Include="IntGroup.h" />
+    <ClInclude Include="Point.h" />
+    <ClInclude Include="Random.h" />
+    <ClInclude Include="SECP256k1.h" />
+    <ClInclude Include="Timer.h" />
+    <ClInclude Include="BTCCollider.h" />
+    <ClInclude Include="GPU\GPUCompute.h">
+      <Filter>GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="GPU\GPUEngine.h">
+      <Filter>GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="GPU\GPUHash.h">
+      <Filter>GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="GPU\GPUMath.h">
+      <Filter>GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="hash\sha512.h">
+      <Filter>Hash</Filter>
+    </ClInclude>
+    <ClInclude Include="hash\sha256.h">
+      <Filter>Hash</Filter>
+    </ClInclude>
+    <ClInclude Include="hash\ripemd160.h">
+      <Filter>Hash</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="GPU">
+      <UniqueIdentifier>{1ccbd2a5-ee1a-4058-bb6a-8742d7d09034}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Hash">
+      <UniqueIdentifier>{b4959bb3-deb1-4ed0-8d76-d071c0b24894}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="GPU\GPUEngine.cu">
+      <Filter>GPU</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>

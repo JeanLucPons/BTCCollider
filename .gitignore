@@ -1,0 +1,11 @@
+DOC/
+.vs/
+BTCCollider.vcxproj.user
+vc140.pdb
+x64/
+obj/
+.idea/
+CMakeLists.txt
+BTCCollider
+cmake-build-debug/
+*.prf
