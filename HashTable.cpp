@@ -18,6 +18,9 @@
 #include "HashTable.h"
 #include <stdio.h>
 #include "Int.h"
+#ifndef WIN64
+#include <string.h>
+#endif
 
 #define safe_free(x) if(x) {free(x);x=NULL;}
 #define GET(hash,id) E[hash].items[id]
@@ -180,9 +183,7 @@ double HashTable::GetSizeMB() {
 
 void HashTable::SaveTable(std::string filename) {
 
-  FILE *f;
-  fopen_s(&f,filename.c_str(),"wb");
-  fclose(f);
+// TODO
 
 }
 
@@ -190,8 +191,7 @@ void HashTable::LoadTable(std::string filename) {
 
   Reset();
   FILE *f;
-  fopen_s(&f,filename.c_str(),"rb");
-  fclose(f);
+// TODO
 
 }
 
@@ -201,7 +201,11 @@ std::string HashTable::GetHashStr(hash160_t *h1) {
   char tmp[256];
   tmp[0] = 0;
   for (int i = 0; i < 20; i++) {
+#ifdef WIN64
     sprintf_s(tmp2,3,"%02X",h1->i8[i]);
+#else
+    sprintf(tmp2,"%02X",h1->i8[i]);
+#endif
     strcat(tmp,tmp2);
   }
   return std::string(tmp);
@@ -311,7 +315,7 @@ int HashTable::getCollisionSize(hash160_t *h1, hash160_t *h2) {
 
 }
 
-inline int HashTable::compareHash(hash160_t *h1, hash160_t *h2) {
+int HashTable::compareHash(hash160_t *h1, hash160_t *h2) {
 
   uint32_t *a = h1->i32;
   uint32_t *b = h2->i32;
@@ -323,10 +327,15 @@ inline int HashTable::compareHash(hash160_t *h1, hash160_t *h2) {
   }
 
   if(i<5) {
-	  uint32_t ai = _byteswap_ulong(a[i]);
-	  uint32_t bi = _byteswap_ulong(b[i]);
+#ifdef WIN64
+    uint32_t ai = _byteswap_ulong(a[i]);
+    uint32_t bi = _byteswap_ulong(b[i]);
+#else
+    uint32_t ai = __builtin_bswap32(a[i]);
+    uint32_t bi = __builtin_bswap32(b[i]);
+#endif
     if( ai>bi ) return 1;
-	  else        return -1;
+    else        return -1;
   } else {
     return 0;
   }

@@ -78,6 +78,9 @@ BTCCollider::BTCCollider(Secp256K1 *secp, bool useGpu, bool stop, std::string ou
   memset(params, 0, sizeof(params));
 
   printf("Initializing:");
+#ifndef WIN64
+  fflush(stdout);
+#endif
   THREAD_HANDLE threadIDs[10];
   for (int i = 0; i < 10; i++) {
     params[i].threadId = i;
@@ -94,7 +97,11 @@ BTCCollider::BTCCollider(Secp256K1 *secp, bool useGpu, bool stop, std::string ou
   if (leftBit > 0) {
     colMask = (1 << (16 - leftBit)) - 1;
     colMask = ~colMask;
+#ifdef WIN64
     colMask = _byteswap_ushort(colMask);
+#else
+    colMask = __builtin_bswap16(colMask);
+#endif
   } else {
     colMask = 0;
   }
@@ -152,6 +159,7 @@ void BTCCollider::Check(std::vector<int> gpuId, std::vector<int> gridSize) {
     printf("Hc=%s\n", GetHex(xc[i]).c_str());
   }
 
+#ifdef WITHGPU
   // Check gpu
   if (useGpu) {
 
@@ -217,6 +225,7 @@ void BTCCollider::Check(std::vector<int> gpuId, std::vector<int> gridSize) {
     printf("GPU/CPU ok\n");
 
   }
+#endif
 
 }
 
@@ -236,10 +245,10 @@ void  BTCCollider::FreeHandles(THREAD_HANDLE *handles, int nbThread) {
 }
 #else
 
-THREAD_HANDLE BTCCollider::LaunchThread(LPTHREAD_START_ROUTINE func, TH_PARAM *p) {
+THREAD_HANDLE BTCCollider::LaunchThread(void *(*func) (void *), TH_PARAM *p) {
   THREAD_HANDLE h;
   p->obj = this;
-  pthread_create(&h, NULL, &_InitKey, (void*)(p));
+  pthread_create(&h, NULL, func, (void*)(p));
   return h;
 }
 void  BTCCollider::JoinThreads(THREAD_HANDLE *handles, int nbThread) {
@@ -264,7 +273,12 @@ void BTCCollider::SetDP(int size) {
     dMask = ~dMask;
   }
 
+#ifdef WIN64
   printf("DP size: %d [0x%016I64X]\n", dpSize, dMask);
+#else
+  printf("DP size: %d [0x%" PRIx64 "]\n", dpSize, dMask);
+#endif
+
   dMask = _byteswap_uint64(dMask);
 
 }
