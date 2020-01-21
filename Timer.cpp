@@ -161,8 +161,7 @@ int Timer::getCoreNumber() {
   GetSystemInfo(&sysinfo);
   return sysinfo.dwNumberOfProcessors;
 #else
-  // TODO
-  return 1;
+  return (size_t)sysconf(_SC_NPROCESSORS_ONLN);
 #endif
 
 }
