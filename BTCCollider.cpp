@@ -70,9 +70,8 @@ BTCCollider::BTCCollider(Secp256K1 *secp, bool useGpu, bool stop, std::string ou
   //     P = pub[0][h0] + pub[1][h1] + .. + pub[9][h9]
   // The calculation is truncated according to the length n.  The corresponding
   // private key P' is:
-  //     P' = priv[0][h0] + priv[1][h1] + .. + priv[9][h9]
-  // Each private key is chosen randomly and computed in advanced. 
-  // Point are stored in projective coordinates (not normalized)
+  //     P' = priv[0]*h0 + priv[1]*h1*2^16 + .. + priv[9]*h9*2^144
+  // Each base private key is chosen randomly and computed in advanced. 
 
   TH_PARAM params[10];
   memset(params, 0, sizeof(params));
@@ -81,6 +80,18 @@ BTCCollider::BTCCollider(Secp256K1 *secp, bool useGpu, bool stop, std::string ou
 #ifndef WIN64
   fflush(stdout);
 #endif
+
+  Point GP = secp->G;
+  Int KP;
+  KP.SetInt32(1);
+  for (int i = 0; i < 10; i++) {
+    Gp[i] = GP;
+    Kp[i] = KP;
+    for (int j = 0; j < 16; j++)
+      GP = secp->DoubleDirect(GP);
+    KP.ShiftL(16);
+  }
+
   THREAD_HANDLE threadIDs[10];
   for (int i = 0; i < 10; i++) {
     params[i].threadId = i;
@@ -92,19 +103,15 @@ BTCCollider::BTCCollider(Secp256K1 *secp, bool useGpu, bool stop, std::string ou
   printf("Done\n");
 
 
-  nbFull = NUM_PARTS(colSize) - 1; // Number of full word
-  int leftBit = colSize - nbFull * 16;
-  if (leftBit > 0) {
-    colMask = (1 << (16 - leftBit)) - 1;
-    colMask = ~colMask;
+  nbFull = colSize / 16 ; // Number of full word
+  int leftBit = colSize % 16;
+  colMask = (1 << (16 - leftBit)) - 1;
+  colMask = ~colMask;
 #ifdef WIN64
-    colMask = _byteswap_ushort(colMask);
+  colMask = _byteswap_ushort(colMask);
 #else
-    colMask = __builtin_bswap16(colMask);
+  colMask = __builtin_bswap16(colMask);
 #endif
-  } else {
-    colMask = 0;
-  }
 
   this->hashTable.SetParam(n,nbFull,colMask);
 
@@ -287,9 +294,17 @@ void BTCCollider::SetDP(int size) {
 
 void BTCCollider::InitKey(TH_PARAM *p) {
 
-  for (int j = 0; j < 65536; j++) {
-    Rand(&p->localSeed,&priv[p->threadId][j]);
-    pub[p->threadId][j] = secp->ComputePublicKey(&priv[p->threadId][j]);
+  Int k;
+  Rand(&p->localSeed, &k);
+  Point sp = secp->ComputePublicKey(&k);
+  int id = p->threadId;
+  pub[id][0] = sp;
+  priv[id][0].Set(&k);
+  for (int j = 1; j < 65536; j++) {
+    k.ModAddK1order(&k,&Kp[id]);
+    sp = secp->AddDirect(sp,Gp[id]);
+    pub[id][j] = sp;
+    priv[id][j].Set(&k);
   }
 
 }

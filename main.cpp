@@ -42,7 +42,7 @@ void printUsage() {
   printf(" -o outputfile: Output results to the specified file\n");
   printf(" -gpu gpuId1,gpuId2,...: List of GPU(s) to use, default is 0\n");
   printf(" -g gridSize1x,gridSize1y,gridSize1x,gridSize1y, ...: Specify GPU(s) kernel gridsize, default is 2*(MP),2*(Core/MP)\n");
-  printf(" -s: Specify size of the collision in bit (default is 40)\n");
+  printf(" -s: Specify size of the collision in bit (minimum 16,default is 40)\n");
   printf(" -d: Specify number of leading zeros for the DP method (default is auto)\n");
   printf(" -t threadNumber: Specify number of CPU thread, default is number of core\n");
   printf(" -l: List cuda enabled devices\n");
@@ -176,6 +176,10 @@ int main(int argc, char* argv[]) {
     } else if (strcmp(argv[a], "-s") == 0) {
       a++;
       cSize = getInt("collisionSize", argv[a]);
+      if (cSize < 16 || cSize>160) {
+        printf("Unexpected collision size [16,160] expected\n");
+        exit(-1);
+      }
       a++;
     } else if (strcmp(argv[a], "-d") == 0) {
       a++;

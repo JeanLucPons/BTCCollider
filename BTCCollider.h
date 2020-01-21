@@ -51,7 +51,6 @@ typedef HANDLE THREAD_HANDLE;
 typedef pthread_t THREAD_HANDLE;
 #endif
 
-#define NUM_PARTS(n) (((n) - 1) / 16 + 1)
 #define CPU_AFFINE
 
 class BTCCollider {
@@ -115,6 +114,8 @@ private:
   int CPU_GRP_SIZE;
 
   // Hash160 to key mapping
+  Point Gp[10]; // Power of G
+  Int   Kp[10]; // Power
   Point pub[10][65536];
   Int   priv[10][65536];
 
