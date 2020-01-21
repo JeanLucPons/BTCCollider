@@ -64,13 +64,13 @@ BTCCollider::BTCCollider(Secp256K1 *secp, bool useGpu, bool stop, std::string ou
   printf("Collision: %d bits\n", n);
   printf("Seed: %s\n", seed.GetBase16().c_str());
 
-  // From pairgen (https://github.com/basil00/pairgen.git)
+  // Derived from pairgen (https://github.com/basil00/pairgen.git)
   // Given a hash160 H comprised on {h0, h1, .., h9} 16-bit parts, then H is
   // mapped to a public key P as follows:
   //     P = pub[0][h0] + pub[1][h1] + .. + pub[9][h9]
   // The calculation is truncated according to the length n.  The corresponding
   // private key P' is:
-  //     P' = priv[0]*h0 + priv[1]*h1*2^16 + .. + priv[9]*h9*2^144
+  //     P' = priv[0]+h0 + priv[1]+h1*2^16 + .. + priv[9]+h9*2^144
   // Each base private key is chosen randomly and computed in advanced. 
 
   TH_PARAM params[10];
