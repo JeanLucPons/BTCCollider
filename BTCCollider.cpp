@@ -314,6 +314,7 @@ void BTCCollider::InitKey(TH_PARAM *p) {
 void BTCCollider::Rand(Int *seed, Int *i) {
   seed->AddOne();
   sha256((uint8_t *)seed->bits64,32,(uint8_t *)i->bits64);
+  i->bits64[4] = 0;
 }
 
 void BTCCollider::Rand(Int *seed, hash160_t *i) {
