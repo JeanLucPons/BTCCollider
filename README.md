@@ -4,7 +4,7 @@ BTCCollider generates BTC p2pkh address pair (and their corresponding private ke
 share the same prefix. It looks for a pair of distinct HASH160 starting with the same bits 
 (a partial collision) using the so called "distinguished point" method which allows 
 to efficiently take benefit of the birthday paradox using parallel calculations.
-BTCCollider supports multi GPU using CUDA.
+BTCCollider supports multi GPU using CUDA and is based on VanitySearch enigne.
 
 # Usage
 
