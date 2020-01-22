@@ -92,7 +92,7 @@ Runnig BTCCollider (Intel(R) Xeon(R) CPU, 8 cores,  @ 2.93GHz, Quadro 600 (x2))
 $export LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64
 ```
 
-# Note of DP method tradeoff
+# Notes on DP method tradeoff
 
 This picture illustrates the overhead you get according to the number of random walk and the number of distinguiseg bits.
 All experimental points (red points) are averaged on 1000 collisions.
