@@ -92,6 +92,16 @@ Runnig BTCCollider (Intel(R) Xeon(R) CPU, 8 cores,  @ 2.93GHz, Quadro 600 (x2))
 $export LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64
 ```
 
+# Note of DP method tradeoff
+
+This picture illustrates the overhead you get according to the number of random walk and the number of distinguiseg bits.
+All experimental points (red points) are an average on 1000 collisions.
+The blue curve is an experimental fit with Z+Z.pow(nbWalk*pow(2.0,dp-20)/2,2/5), this fit works rather well when dp > 11. Z=sqrt(PI/2.2^40).
+The green curve is the average of the birthday paradox without using DP method (DP0).
+Significant overhead appear when dp > 2^20 - log2(nbWalk), for 40 bits collision.
+
+![JSSHTerminal](img/hash160_col40.jpg)
+
 # License
 
 BTCCollider is licensed under GPLv3.
