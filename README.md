@@ -28,29 +28,30 @@ BTCCollider [-check] [-v] [-gpu]
  
 Example (Windows, Intel Core i7-4770 3.4GHz 8 multithreaded cores, GeForce GTX 1050 Ti):
 ```
-C:\C++\BTCCollider\x64\Release>BTCCollider.exe -gpu -s 64
+C:\C++\BTCCollider\x64\Release>BTCCollider.exe -t 6 -gpu -s 80
 BTCCollider v1.0
-Collision: 64 bits
-Seed: 2F2FA6C636C8F57E1EE31C77C81A272A325F9510B4B327DA6499E3BC220171D5
+Collision: 80 bits
+Seed: 305ABC344F924BD8B268905F99ADBD403D9A45BB220C5948731740DDE0E3A41A
 Initializing:Done
-Start Mon Jan 20 16:03:22 2020
-Number of CPU thread: 7
-Number of random walk: 2^18.59 (Max DP=12)
-DP size: 12 [0xFFF0000000000000]
+Start Tue Jan 21 16:02:07 2020
+Number of CPU thread: 6
+Number of random walk: 2^18.59 (Max DP=20)
+DP size: 20 [0xFFFFF00000000000]
 GPU: GPU #0 GeForce GTX 1050 Ti (6x128 cores) Grid(12x256) (60.5 MB used)
-[30.5 Mips][GPU 26.3 Mips][Cnt 2^32.84][T 04:12][Tavg 02:56][hSize 103.9MB]
+[27.9 Mips][GPU 24.8 Mips][Cnt 2^39.44][T 07:24:33][Tavg 13:42:43][hSize 41.3MB]
 Undistinguishing
-DP size: 6 [0xFC00000000000000]
-DP size: 3 [0xE000000000000000]
+DP size: 10 [0xFFC0000000000000]
+DP size: 5 [0xF800000000000000]
+DP size: 2 [0xC000000000000000]
 DP size: 1 [0x8000000000000000]
 DP size: 0 [0x0000000000000000]
-[Collision Found: 64 bits][Cnt 2^32.84][T 04:13]
-H1=3102614E204BAC3B62365B3955A0DF6D98E35169
-H2=3102614E204BAC3BDA05B6A31D17868EADFF44DE
-Priv (WIF): p2pkh:KwWbLNMxzAgwEXRbxZUJufCVbsBizpfkYvCzRJ1ARnVYs5x818Zq
-Priv (WIF): p2pkh:L1ezmtBrzoSWEYVTfRktzR6bNtHUDpyE15eKofVPttxcw8SFgSBU
-Add1: 15U8xmmR6AGJs4ioYbPPwZqiFugJVZfQcy
-Add2: 15U8xmmR6AGK7rozwS9eDqepBe7zHrufuX
+[Collision Found: 82 bits][Cnt 2^39.44][T 07:24:40]
+H1=FD53BD2E39ECB0F2D6AE441DE23ED586CA57C7B3
+H2=FD53BD2E39ECB0F2D6AE72F3F4D6A824A065915B
+Priv (WIF): p2pkh:KzNuYQf9X5sbXtr5mgEeBMx7LK2K6QRK73pMWqMhVAGpoWLEowLA
+Priv (WIF): p2pkh:KzNuYQf9X5sbXtr5mgEeBMx7LK2K6QRFqBMftDEYHFzssVsN2Shn
+Add1: 1Q6UGpZ6oKmCSZF1m7W1r3pp7syt1JZwMe
+Add2: 1Q6UGpZ6oKmCSZFJynpzcRPJWJ2ur5Ujb5
 ```
 
 # Compilation
