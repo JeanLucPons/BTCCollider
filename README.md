@@ -4,7 +4,7 @@ BTCCollider generates BTC p2pkh address pair (and their corresponding private ke
 share the same prefix. It looks for a pair of distinct HASH160 starting with the same bits 
 (a partial collision) using the so called "distinguished point" method which allows 
 to efficiently take benefit of the birthday paradox using parallel calculations.
-BTCCollider supports multi GPU using CUDA.
+BTCCollider supports multi GPU using CUDA and is based on VanitySearch enigne.
 
 # Usage
 
@@ -90,7 +90,41 @@ $ make gpu=1 ccap=20 all
 Runnig BTCCollider (Intel(R) Xeon(R) CPU, 8 cores,  @ 2.93GHz, Quadro 600 (x2))
 ```
 $export LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64
+$./BTCCollider -gpu -gpuId 0,1 -s 56
+BTCCollider v1.0
+Collision: 56 bits
+Seed: B820941A47BF7E47B67C1F0DEBEB5B422A8AF55497811A74D08A1CD69E6E17A4
+Initializing:Done
+Start Wed Jan 22 13:26:34 2020
+Number of CPU thread: 6
+Number of random walk: 2^14.63 (Max DP=12)
+DP size: 12 [0xfff0000000000000]
+GPU: GPU #0 Quadro 600 (2x48 cores) Grid(4x96) (43.1 MB used)
+GPU: GPU #1 Quadro 600 (2x48 cores) Grid(4x96) (43.1 MB used)
+[5.8 Mips][GPU 2.7 Mips][Cnt 2^28.61][T 01:10][Tavg 57 s][hSize 10.8MB]  
+Undistinguishing
+DP size: 6 [0xfc00000000000000]
+DP size: 3 [0xe000000000000000]
+DP size: 1 [0x8000000000000000]
+DP size: 0 [0x0]
+[Collision Found: 57 bits][Cnt 2^28.62][T 01:10]
+H1=6E1A7D4635F2FC2BCD77CD3876D82CBC14102694
+H2=6E1A7D4635F2FC60D084BF846A3F9A8EC5327648
+Priv (WIF): p2pkh:KwYUtUYFZYiTYC1KvF5enJGmUitpL3jEAzHFmyqGFgLR9GRyVKmp
+Priv (WIF): p2pkh:KwYUtUYFZYiTYC1KvF5enJGmUitpL3jEAzHFUwbG1iniUEMCA8uD
+Add1: 1B3B4cbvZogP3Z7uNdNV4RUVDAND2qJcFJ
+Add2: 1B3B4cbvZogswNAiYoBYNqSUEqmq7pEd1V
 ```
+
+# Notes on DP method tradeoff
+
+This picture illustrates the overhead you get according to the number of random walk and the number of distinguished bits.
+All experimental points (red points) are averaged on 1000 collisions.
+The blue curve is an experimental fit with Z+Z.pow(nbWalk*pow(2,dp-20)/2,2/5), this fit works rather well when dp > 9. Z=sqrt(PI/2.2^40).
+The green curve is the natural average of the birthday paradox without using DP method (DP0).
+Significant overhead appears when dp >= ceil(n/2 - log2(nbWalk)), for n bits collision.
+
+![JSSHTerminal](img/hash160_col40.jpg)
 
 # License
 
