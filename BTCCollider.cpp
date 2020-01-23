@@ -806,7 +806,7 @@ void BTCCollider::Search(int nbThread,std::vector<int> gpuId,std::vector<int> gr
   // an overload appears due to the fact that computed paths become too short
   // and decrease significantly the probability that distiguised points collide 
   // inside the centralized hash table.
-  int optimalDP = (int)((double)colSize / 2.0 - log2((double)totalRW) - 1);
+  int optimalDP = (int)((double)colSize / 2.0 - log2((double)totalRW) - 2);
   if (optimalDP < 0) optimalDP = 0;
   printf("Number of random walk: 2^%.2f (Max DP=%d)\n", log2((double)totalRW), optimalDP);
 
