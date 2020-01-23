@@ -118,13 +118,16 @@ Add2: 1B3B4cbvZogswNAiYoBYNqSUEqmq7pEd1V
 
 # Notes on DP method tradeoff
 
-This picture illustrates the overhead you get according to the number of random walk and the number of distinguished bits.
-All experimental points (red points) are averaged on 1000 collisions.
-The blue curve is an experimental fit with Z+Z.pow(nbWalk*pow(2,dp-20)/2,2/5), this fit works rather well when dp > 9. Z=sqrt(PI/2.2^40).
+This picture illustrates the overhead you get according to the number of random walks running in parallel and the number of distinguished bits. All experimental points (red points) are averaged over 1000 collisions.
 The green curve is the natural average of the birthday paradox without using DP method (DP0).
-Significant overhead appears when dp >= ceil(n/2 - log2(nbWalk)), for n bits collision.
+The total number of iteration is the total number of evaluation of the F function of all walks.
+Significant overhead of memory and time (+10%) appears  when dp > n/2 - log2(nbWalk) - 2, for n bits collision.
+BTCCollider compute DP using the following code, DP can be set manually using -d option:
+```
+int optimalDP = (int)((double)colSize / 2.0 - log2((double)totalRW) - 2);
+```
 
-![JSSHTerminal](img/hash160_col40.jpg)
+![40BITS dp curves](img/hash160_col40.jpg)
 
 # License
 
