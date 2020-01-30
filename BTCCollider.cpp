@@ -1295,7 +1295,7 @@ void BTCCollider::Search(int nbThread,std::vector<int> gpuId,std::vector<int> gr
 
       if (isAlive(params)) {
 
-        double P = avgKeyRate * (t1 - startTime) / avgI;
+        double P = avgKeyRate * (t1 - startTime + offsetTime) / avgI;
 
         printf("\r[%.2f Mips][GPU %.2f Mips][Cnt 2^%.2f][%s %.1fMB][Avg %s %.1fMB]  ",
           avgKeyRate / 1000000.0, avgGpuKeyRate / 1000000.0,
