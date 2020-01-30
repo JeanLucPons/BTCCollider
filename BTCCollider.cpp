@@ -1310,7 +1310,7 @@ void BTCCollider::Search(int nbThread,std::vector<int> gpuId,std::vector<int> gr
 
       if (workFile.length() > 0) {
         if ((t1- lastSave) > saveWorkPeriod) {
-          SaveWork(count, t1 - startTime, params, nbCPUThread + nbGPUThread);
+          SaveWork(count + offsetCount, t1 - startTime + offsetTime, params, nbCPUThread + nbGPUThread);
           lastSave = t1;
         }
       }
