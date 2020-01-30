@@ -1386,7 +1386,7 @@ void BTCCollider::Search(int nbThread,std::vector<int> gpuId,std::vector<int> gr
       GetTimeStr(totalTime).c_str());
 
     FILE *f = stdout;
-    boolean needToClose = false;
+    bool needToClose = false;
 
     if (outputFile.length() > 0) {
       f = fopen(outputFile.c_str(), "w");
