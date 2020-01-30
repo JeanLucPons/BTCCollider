@@ -6,7 +6,7 @@ share the same prefix. It looks for a pair of distinct HASH160 starting with the
 to efficiently take benefit of the birthday paradox using parallel calculations.
 BTCCollider supports multi GPU using CUDA and is based on VanitySearch enigne.
 
-On my hardware ( TX 1050 Ti):
+On my hardware ( GTX 1050 Ti):
 
 | Collision     |  Average time  | Avergae time (using -e) |
 |----------|:-------------:|:-------------:|
