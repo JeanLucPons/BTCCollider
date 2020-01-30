@@ -6,22 +6,39 @@ share the same prefix. It looks for a pair of distinct HASH160 starting with the
 to efficiently take benefit of the birthday paradox using parallel calculations.
 BTCCollider supports multi GPU using CUDA and is based on VanitySearch enigne.
 
+On my hardware ( TX 1050 Ti):
+
+| Collision     |  Average time  | Avergae time (using -e) |
+|----------|:-------------:|:-------------:|
+| 64 bits | 2min51 | 2min51 |
+| 80 bits | 15h30 | 14h30 |
+| 96 bits | 201d | 180d |
+| 112 bits | 165y | 145y |
+| 128 bits | 48744y | 42000y |
+| 144 bits | 1.4e7y | 1.18e7y |
+| 160 bits | 4e9y | 3.3e9y |
+
 # Usage
 
 ```
 BTCCollider [-check] [-v] [-gpu]
-            [-gpuId gpuId1[,gpuId2,...]] [-g gridSize1[,gridSize2,...]]
+            [-gpuId gpuId1[,gpuId2,...]] [-g g1x,g1y[,g2x,g2y,...]]
             [-o outputfile] [-s collisionSize] [-t nbThread] [-d dpBit]
-            [-nosse] [-check]
+            [-w workfile] [-i inputWorkFile] [-wi workInterval]
+            [-e] [-check]
 
  -v: Print version
  -gpu: Enable gpu calculation
  -o outputfile: Output results to the specified file
  -gpu gpuId1,gpuId2,...: List of GPU(s) to use, default is 0
- -g gridSize1x,gridSize1y,gridSize1x,gridSize1y, ...: Specify GPU(s) kernel gridsize, default is 2*(MP),2*(Core/MP)
- -s: Specify size of the collision in bit (default is 40)
+ -g g1x,g1y,g2x,g2y,...: Specify GPU(s) kernel gridsize, default is 2*(MP),2*(Core/MP)
+ -s: Specify size of the collision in bit (minimum 16,default is 40)
  -d: Specify number of leading zeros for the DP method (default is auto)
+ -e: Enable extra points (symetry and endomorphisms), reduce needed step by sqrt(2)
  -t threadNumber: Specify number of CPU thread, default is number of core
+ -w workfile: Specify file to save work into
+ -i workfile: Specify file to load work from
+ -wi workInterval: Periodic interval (in seconds) for saving work
  -l: List cuda enabled devices
  -check: Check CPU and GPU kernel vs CPU
 ```
