@@ -43,8 +43,8 @@ typedef struct ENTRY {
 
 typedef struct {
 
-  int       nbItem;
-  int       maxItem;
+  uint32_t   nbItem;
+  uint32_t   maxItem;
   ENTRY    **items;
 
 } HASH_ENTRY;
@@ -60,8 +60,8 @@ public:
   HashTable();
   void SetParam(int n,int nbFull,uint16_t colMask);
   int AddHash(hash160_t *start, hash160_t *end);
-  void SaveTable(std::string filename);
-  void LoadTable(std::string filename);
+  void SaveTable(FILE *f);
+  void LoadTable(FILE *f);
   std::string GetHashStr(hash160_t *h);
   void PrintTable(int limit=0);
   int GetNbItem();

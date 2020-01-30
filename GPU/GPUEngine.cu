@@ -35,17 +35,17 @@
 
 // ---------------------------------------------------------------------------------------
 
-__global__ void comp_hash(uint64_t *keys, uint64_t *hashes, uint32_t maxFound, uint32_t *found, uint64_t dpMask, uint16_t colMask, uint16_t nbFull) {
+__global__ void comp_hash(uint64_t *keys, uint64_t *hashes, uint32_t maxFound, uint32_t *found, uint64_t dpMask, uint16_t colMask, uint16_t nbFull, bool extraPoints) {
 
   int xPtr = (blockIdx.x*blockDim.x*GPU_GRP_SIZE) * 6;
-  ComputeHash(keys, hashes + xPtr, maxFound, found, dpMask, colMask, nbFull);
+  ComputeHash(keys, hashes + xPtr, maxFound, found, dpMask, colMask, nbFull, extraPoints);
 
 }
 
-__global__ void comp_hash_p2sh(uint64_t *keys, uint64_t *hashes, uint32_t maxFound, uint32_t *found, uint64_t dpMask, uint16_t colMask, uint16_t nbFull) {
+__global__ void comp_hash_p2sh(uint64_t *keys, uint64_t *hashes, uint32_t maxFound, uint32_t *found, uint64_t dpMask, uint16_t colMask, uint16_t nbFull, bool extraPoints) {
 
   int xPtr = (blockIdx.x*blockDim.x*GPU_GRP_SIZE) * 6;
-  ComputeHashP2SH(keys, hashes + xPtr, maxFound, found, dpMask, colMask, nbFull);
+  ComputeHashP2SH(keys, hashes + xPtr, maxFound, found, dpMask, colMask, nbFull, extraPoints);
 
 }
 
@@ -167,6 +167,12 @@ GPUEngine::GPUEngine(int nbThreadGroup, int nbThreadPerGroup, int gpuId, uint32_
   */
 
   // Allocate memory
+  inputKey = NULL;
+  inputKeyPinned = NULL;
+  outputHash = NULL;
+  outputHashPinned = NULL;
+  inputHash = NULL;
+  inputHashPinned = NULL;
 
   // Input keys (see BTCCollider.cpp)
   keySize = 10 * _64K * 32 * 2;
@@ -198,7 +204,7 @@ GPUEngine::GPUEngine(int nbThreadGroup, int nbThreadPerGroup, int gpuId, uint32_
     printf("GPUEngine: Allocate output memory: %s\n", cudaGetErrorString(err));
     return;
   }
-  err = cudaHostAlloc(&inputHashPinned, inputHashSize, cudaHostAllocMapped);
+  err = cudaHostAlloc(&inputHashPinned, inputHashSize, cudaHostAllocWriteCombined | cudaHostAllocMapped);
   if (err != cudaSuccess) {
     printf("GPUEngine: Allocate output pinned memory: %s\n", cudaGetErrorString(err));
     return;
@@ -206,8 +212,22 @@ GPUEngine::GPUEngine(int nbThreadGroup, int nbThreadPerGroup, int gpuId, uint32_
 
   searchType = P2PKH;
   initialised = true;
+  useExtraPoints = false;
+
 
 }
+
+GPUEngine::~GPUEngine() {
+
+  if(inputKey) cudaFree(inputKey);
+  if(inputHash) cudaFree(inputHash);
+  if(outputHash) cudaFree(outputHash);
+  if(inputKeyPinned) cudaFreeHost(inputKeyPinned);
+  if(inputHashPinned) cudaFreeHost(inputHashPinned);
+  if(outputHashPinned) cudaFreeHost(outputHashPinned);
+
+}
+
 
 int GPUEngine::GetMemory() {
   return keySize + inputHashSize + outputSize;
@@ -237,7 +257,7 @@ bool GPUEngine::GetGridSize(int gpuId, int *x, int *y) {
     }
 
     if (gpuId >= deviceCount) {
-      printf("GPUEngine::GetGridSize() Invliad gpuId\n");
+      printf("GPUEngine::GetGridSize() Invalid gpuId\n");
       return false;
     }
 
@@ -252,6 +272,24 @@ bool GPUEngine::GetGridSize(int gpuId, int *x, int *y) {
 
   return true;
 
+}
+
+void *GPUEngine::AllocatePinnedMemory(size_t size) {
+
+  void *buff;
+
+  cudaError_t err = cudaHostAlloc(&buff, size, cudaHostAllocPortable);
+  if (err != cudaSuccess) {
+    printf("GPUEngine: AllocatePinnedMemory: %s\n", cudaGetErrorString(err));
+    return NULL;
+  }
+
+  return buff;
+
+}
+
+void GPUEngine::FreePinnedMemory(void *buff) {
+  cudaFreeHost(buff);
 }
 
 void GPUEngine::PrintCudaInfo() {
@@ -302,13 +340,8 @@ void GPUEngine::PrintCudaInfo() {
 
 }
 
-GPUEngine::~GPUEngine() {
-
-  cudaFree(inputKey);
-  cudaFree(inputHash);
-  cudaFreeHost(outputHashPinned);
-  cudaFree(outputHash);
-
+void GPUEngine::SetExtraPoint(bool extraPoint) {
+  useExtraPoints = extraPoint;
 }
 
 int GPUEngine::GetNbThread() {
@@ -319,7 +352,44 @@ void GPUEngine::SetSearchType(int searchType) {
   this->searchType = searchType;
 }
 
-bool GPUEngine::SetStartingHashes(uint64_t *h) {
+bool GPUEngine::GetHashes(uint64_t *sHash, uint64_t *cHash) {
+
+  // Retrieve hash from device memory
+  cudaMemcpy(inputHashPinned, inputHash, inputHashSize, cudaMemcpyDeviceToHost);
+
+  cudaError_t err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    printf("GPUEngine: GetHashes: %s\n", cudaGetErrorString(err));
+    return false;
+  }
+
+  int gSize = 6 * GPU_GRP_SIZE;
+  int strideSize = nbThreadPerGroup * 6;
+  int nbBlock = nbThread / nbThreadPerGroup;
+  int blockSize = nbThreadPerGroup * gSize;
+
+  for (int b = 0; b < nbBlock; b++) {
+    for (int g = 0; g < GPU_GRP_SIZE; g++) {
+      for (int t = 0; t < nbThreadPerGroup; t++) {
+        // Current hash
+        cHash[0] = inputHashPinned[b * blockSize + g * strideSize + t + 0 * nbThreadPerGroup];
+        cHash[1] = inputHashPinned[b * blockSize + g * strideSize + t + 1 * nbThreadPerGroup];
+        cHash[2] = inputHashPinned[b * blockSize + g * strideSize + t + 2 * nbThreadPerGroup];
+        // Start hash
+        sHash[0] = inputHashPinned[b * blockSize + g * strideSize + t + 3 * nbThreadPerGroup];
+        sHash[1] = inputHashPinned[b * blockSize + g * strideSize + t + 4 * nbThreadPerGroup];
+        sHash[2] = inputHashPinned[b * blockSize + g * strideSize + t + 5 * nbThreadPerGroup];
+        cHash += 3;
+        sHash += 3;
+      }
+    }
+  }
+
+  return true;
+
+}
+
+bool GPUEngine::SetStartingHashes(uint64_t *sHash, uint64_t *cHash) {
 
   lostWarning = false;
 
@@ -332,25 +402,22 @@ bool GPUEngine::SetStartingHashes(uint64_t *h) {
   for (int b = 0; b < nbBlock; b++) {
     for (int g = 0; g < GPU_GRP_SIZE; g++) {
       for (int t = 0; t < nbThreadPerGroup; t++) {
+        // Current hash
+        inputHashPinned[b * blockSize + g * strideSize + t + 0* nbThreadPerGroup] = cHash[0];
+        inputHashPinned[b * blockSize + g * strideSize + t + 1* nbThreadPerGroup] = cHash[1];
+        inputHashPinned[b * blockSize + g * strideSize + t + 2* nbThreadPerGroup] = cHash[2];
         // Start hash
-        inputHashPinned[b * blockSize + g * strideSize + t + 0* nbThreadPerGroup] = h[0];
-        inputHashPinned[b * blockSize + g * strideSize + t + 1* nbThreadPerGroup] = h[1];
-        inputHashPinned[b * blockSize + g * strideSize + t + 2* nbThreadPerGroup] = h[2];
-        // End hash
-        inputHashPinned[b * blockSize + g * strideSize + t + 3 * nbThreadPerGroup] = h[0];
-        inputHashPinned[b * blockSize + g * strideSize + t + 4 * nbThreadPerGroup] = h[1];
-        inputHashPinned[b * blockSize + g * strideSize + t + 5 * nbThreadPerGroup] = h[2];
-        h+=3;
+        inputHashPinned[b * blockSize + g * strideSize + t + 3 * nbThreadPerGroup] = sHash[0];
+        inputHashPinned[b * blockSize + g * strideSize + t + 4 * nbThreadPerGroup] = sHash[1];
+        inputHashPinned[b * blockSize + g * strideSize + t + 5 * nbThreadPerGroup] = sHash[2];
+        cHash += 3;
+        sHash += 3;
       }
     }
   }
 
   // Fill device memory
   cudaMemcpy(inputHash, inputHashPinned, inputHashSize, cudaMemcpyHostToDevice);
-
-  // We do not need the input pinned memory anymore
-  cudaFreeHost(inputHashPinned);
-  inputHashPinned = NULL;
 
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
@@ -370,13 +437,13 @@ bool GPUEngine::callKernel() {
   if (searchType == P2SH) {
 
     comp_hash_p2sh << < nbThread / nbThreadPerGroup, nbThreadPerGroup >> >
-        (inputKey, inputHash, maxFound, outputHash, dpMask, colMask, nbFull);
+        (inputKey, inputHash, maxFound, outputHash, dpMask, colMask, nbFull, useExtraPoints);
 
   } else {
 
     // P2PKH or BECH32
     comp_hash << < nbThread / nbThreadPerGroup, nbThreadPerGroup >> >
-      (inputKey, inputHash, maxFound, outputHash, dpMask, colMask, nbFull);
+      (inputKey, inputHash, maxFound, outputHash, dpMask, colMask, nbFull, useExtraPoints);
     
   }
 
@@ -395,22 +462,25 @@ void GPUEngine::SetMasks(uint16_t colMask, uint64_t dpMask, uint16_t nbFull) {
   this->nbFull = nbFull;
 }
 
-void GPUEngine::SetKeys(Point p[10][65536]) {
+#define PX(i,j) p[(i)*(65536*2) + 2*(j)]
+#define PY(i,j) p[(i)*(65536*2) + 2*(j)+1]
+
+void GPUEngine::SetKeys(Int *p) {
 
   // Sets the base keys for mapping
 
   for (int i = 0; i < 10; i++) {
     for (int j = 0; j < 65536; j++) {
 
-      inputKeyPinned[8 * ((i*_64K) + j) + 0] = p[i][j].x.bits64[0];
-      inputKeyPinned[8 * ((i*_64K) + j) + 1] = p[i][j].x.bits64[1];
-      inputKeyPinned[8 * ((i*_64K) + j) + 2] = p[i][j].x.bits64[2];
-      inputKeyPinned[8 * ((i*_64K) + j) + 3] = p[i][j].x.bits64[3];
+      inputKeyPinned[8 * ((i*_64K) + j) + 0] = PX(i, j).bits64[0];
+      inputKeyPinned[8 * ((i*_64K) + j) + 1] = PX(i, j).bits64[1];
+      inputKeyPinned[8 * ((i*_64K) + j) + 2] = PX(i, j).bits64[2];
+      inputKeyPinned[8 * ((i*_64K) + j) + 3] = PX(i, j).bits64[3];
 
-      inputKeyPinned[8 * ((i*_64K) + j) + 4] = p[i][j].y.bits64[0];
-      inputKeyPinned[8 * ((i*_64K) + j) + 5] = p[i][j].y.bits64[1];
-      inputKeyPinned[8 * ((i*_64K) + j) + 6] = p[i][j].y.bits64[2];
-      inputKeyPinned[8 * ((i*_64K) + j) + 7] = p[i][j].y.bits64[3];
+      inputKeyPinned[8 * ((i*_64K) + j) + 4] = PY(i, j).bits64[0];
+      inputKeyPinned[8 * ((i*_64K) + j) + 5] = PY(i, j).bits64[1];
+      inputKeyPinned[8 * ((i*_64K) + j) + 6] = PY(i, j).bits64[2];
+      inputKeyPinned[8 * ((i*_64K) + j) + 7] = PY(i, j).bits64[3];
 
     }
   }
@@ -418,7 +488,7 @@ void GPUEngine::SetKeys(Point p[10][65536]) {
   // Fill device memory
   cudaMemcpy(inputKey, inputKeyPinned, keySize, cudaMemcpyHostToDevice);
 
-  // We do not need the input pinned memory anymore
+  // We do not need the key pinned memory anymore
   cudaFreeHost(inputKeyPinned);
   inputKeyPinned = NULL;
 

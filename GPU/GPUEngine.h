@@ -41,9 +41,11 @@ public:
   GPUEngine(int nbThreadGroup,int nbThreadPerGroup,int gpuId,uint32_t maxFound); 
   ~GPUEngine();
   void SetMasks(uint16_t colMask,uint64_t dpMask,uint16_t nbFull);
-  void SetKeys(Point p[10][65536]);
+  void SetKeys(Int *p);
   void SetSearchType(int searchType);
-  bool SetStartingHashes(uint64_t *hash);
+  void SetExtraPoint(bool extraPoint);
+  bool SetStartingHashes(uint64_t *sHash, uint64_t *cHash);
+  bool GetHashes(uint64_t *sHash, uint64_t *cHash);
   bool Launch(std::vector<ITEM> &hashFound,bool spinWait=false);
   int GetNbThread();
   int GetGroupSize();
@@ -51,6 +53,8 @@ public:
 
   std::string deviceName;
 
+  static void *AllocatePinnedMemory(size_t size);
+  static void FreePinnedMemory(void *buff);
   static void PrintCudaInfo();
   static bool GetGridSize(int gpuId, int *x, int *y);
 
@@ -72,6 +76,7 @@ private:
   uint32_t searchType;
   bool littleEndian;
   bool lostWarning;
+  bool useExtraPoints;
   uint32_t maxFound;
   uint32_t outputSize;
   uint64_t dpMask;

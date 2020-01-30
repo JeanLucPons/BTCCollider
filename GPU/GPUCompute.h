@@ -108,7 +108,9 @@ __device__ void Add(uint64_t p1x[4], uint64_t p1y[4], uint64_t p1z[4],
 
 // -----------------------------------------------------------------------------------------
 
-__device__ void ComputeHash(uint64_t *keys, uint64_t *hashes,uint32_t maxFound, uint32_t *out,uint64_t dpMask,uint16_t colMask, uint16_t nbFull) {
+#define HASHOK(h)  ((h[0] & 0x0080)==0)
+
+__device__ void ComputeHash(uint64_t *keys, uint64_t *hashes,uint32_t maxFound, uint32_t *out,uint64_t dpMask,uint16_t colMask, uint16_t nbFull, bool extraPoints) {
 
   // Perform x = F(x) for a group
   uint64_t px[GPU_GRP_SIZE][4];
@@ -119,6 +121,8 @@ __device__ void ComputeHash(uint64_t *keys, uint64_t *hashes,uint32_t maxFound, 
   LoadHash(x, hashes);
 
   for (int run = 0; run < NB_RUN; run++) {
+
+    __syncthreads();
 
 #ifdef GPU_AFFINE
 
@@ -171,17 +175,48 @@ __device__ void ComputeHash(uint64_t *keys, uint64_t *hashes,uint32_t maxFound, 
 
     for (int g = 0; g < GPU_GRP_SIZE; g++) {
 
-      _GetHash160Comp(px[g], (uint8_t)(py[g][0] & 0x1), (uint8_t *)(x[g]));
+      uint8_t isOdd = (uint8_t)(py[g][0] & 0x1);
+
+      __syncthreads();
+      _GetHash160Comp(px[g], isOdd, (uint8_t *)(x[g]));
+
+      if (extraPoints) {
+
+        uint64_t xe1[4];
+        uint64_t xe2[4];
+
+        if (HASHOK(x[g])) goto checkdp;
+
+        _GetHash160Comp(px[g], !isOdd, (uint8_t *)(x[g]));
+        if (HASHOK(x[g])) goto checkdp;
+
+        Load256(xe1, px[g]);
+        _ModMult(xe1, _beta);
+        _GetHash160Comp(xe1, isOdd, (uint8_t *)(x[g]));
+        if (HASHOK(x[g])) goto checkdp;
+
+        _GetHash160Comp(xe1, !isOdd, (uint8_t *)(x[g]));
+        if (HASHOK(x[g])) goto checkdp;
+
+        Load256(xe2, px[g]);
+        _ModMult(xe2, _beta2);
+        _GetHash160Comp(xe2, isOdd, (uint8_t *)(x[g]));
+        if (HASHOK(x[g])) goto checkdp;
+
+        _GetHash160Comp(xe2, !isOdd, (uint8_t *)(x[g]));
+
+      }
+
+    checkdp:
+
       if ((*((uint64_t *)x[g]) & dpMask) == 0) {
 
         // Distinguished point
         uint16_t s[12];
         LoadStartHash(s, hashes, g);
         uint32_t pos = atomicAdd(out, 1);
-        if (pos < maxFound) {
-          memcpy(((uint8_t *)out) + pos * ITEM_SIZE + 4, s, 20);
-          memcpy(((uint8_t *)out) + pos * ITEM_SIZE + 24, x[g], 20);
-        }
+        if (pos < maxFound)
+          OutputHash(s,x[g]);
         StoreStartHash(x[g], hashes, g);
 
       }
@@ -195,6 +230,6 @@ __device__ void ComputeHash(uint64_t *keys, uint64_t *hashes,uint32_t maxFound, 
 
 }
 
-__device__ void ComputeHashP2SH(uint64_t *keys, uint64_t *hashes, uint32_t maxFound, uint32_t *out, uint64_t dpMask, uint16_t colMask, uint16_t nbFull) {
+__device__ void ComputeHashP2SH(uint64_t *keys, uint64_t *hashes, uint32_t maxFound, uint32_t *out, uint64_t dpMask, uint16_t colMask, uint16_t nbFull, bool extraPoints) {
 
 }

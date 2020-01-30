@@ -43,7 +43,14 @@ public:
     Point &k0, Point &k1, Point &k2, Point &k3,
     uint8_t *h0, uint8_t *h1, uint8_t *h2, uint8_t *h3);
 
+  void GetCompressedHash160(int type,
+    Int *x0, Int *x1, Int *x2, Int *x3,
+    bool y0Odd, bool y1Odd, bool y2Odd, bool y3Odd,
+    uint8_t *h0, uint8_t *h1, uint8_t *h2, uint8_t *h3);
+
   void GetHash160(int type,bool compressed, Point &pubKey, unsigned char *hash);
+
+  void GetCompressedHash160(int type,Int *x, bool yOdd, unsigned char *hash);
 
   std::string GetAddress(int type, bool compressed, Point &pubKey);
   std::string GetAddress(int type, bool compressed, unsigned char *hash160);

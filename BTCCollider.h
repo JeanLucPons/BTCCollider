@@ -36,12 +36,20 @@ typedef struct {
   int  threadId;
   bool isRunning;
   bool hasStarted;
-  int  gridSizeX;
-  int  gridSizeY;
-  int  gpuId;
+  bool isWaiting;
   Int  localSeed;
   hash160_t start;
   hash160_t end;
+  uint64_t nbWalk;
+  hash160_t *x;  // Starting path item
+  hash160_t *y;  // Current path item
+
+#ifdef WITHGPU
+  int  gridSizeX;
+  int  gridSizeY;
+  int  gpuId;
+  GPUEngine *gpu;
+#endif
 
 } TH_PARAM;
 
@@ -52,12 +60,17 @@ typedef pthread_t THREAD_HANDLE;
 #endif
 
 #define CPU_AFFINE
+//#define STATISTICS
+
+#define HASHOK(h)  (((h).i8[0] & 0x80)==0)
+#define PUBX(i,j) pub[(i)*(65536*2) + 2*(j)]
+#define PUBY(i,j) pub[(i)*(65536*2) + 2*(j)+1]
 
 class BTCCollider {
 
 public:
 
-  BTCCollider(Secp256K1 *secp, bool useGpu, bool stop, std::string outputFile, bool useSSE,uint32_t n,int dp);
+  BTCCollider(Secp256K1 *secp, bool useGpu, bool stop, std::string outputFile, std::string workFile, std::string iWorkFile, uint32_t savePeriod, uint32_t n,int dp,bool extraPoint);
   void Search(int nbThread,std::vector<int> gpuId,std::vector<int> gridSize);
   void Check(std::vector<int> gpuId, std::vector<int> gridSize);
   void FindCollisionCPU(TH_PARAM *p);
@@ -76,7 +89,10 @@ private:
   void AddGroup(IntGroup *grp, hash160_t *x, Point *p1, Int *dx, int i, uint16_t colMask);
   void Lock();
   void Unlock();
+  void SaveWork(uint64_t totalCount,double totalTime,TH_PARAM *threads,int nbThread);
+  void LoadWork(std::string fileName);
   std::string GetTimeStr(double s);
+  Point Add(Point &p1, int n, uint16_t h);
 
 #ifdef WIN64
   THREAD_HANDLE LaunchThread(LPTHREAD_START_ROUTINE func,TH_PARAM *p);
@@ -89,34 +105,52 @@ private:
   std::string GetHex(hash160_t x);
   void Rand(Int *seed,Int *i);
   void Rand(Int *seed,hash160_t *i);
-  bool isAlive(TH_PARAM *p);
   uint64_t getGPUCount();
   uint64_t getCPUCount();
+  bool isAlive(TH_PARAM *p);
   bool hasStarted(TH_PARAM *p);
+  bool isWaiting(TH_PARAM *p);
+  void FetchWalks(hash160_t *x,hash160_t *y, uint64_t nbWalk);
 
+  std::string initialSeed;
   Int seed;
   Secp256K1 *secp;
   HashTable hashTable;
+  uint64_t offsetCount;
+  double offsetTime;
   uint64_t counters[256];
   uint64_t dMask;
-  int dpSize;
+  uint32_t dpSize;
   int initDPSize;
-  int colSize;
+  uint32_t colSize;
   int nbFull;
   uint16_t colMask;
   int  nbCPUThread;
   int  nbGPUThread;
   std::string outputFile;
+  std::string workFile;
+  int  saveWorkPeriod;
   bool useSSE;
   bool useGpu;
   bool endOfSearch;
+  bool saveRequest;
+  bool extraPoints;
   double startTime;
   int CPU_GRP_SIZE;
+  Int lambda1;
+  Int lambda2;
+  Int beta1;
+  Int beta2;
+
+  uint64_t nbLoadedWalk;
+  uint64_t fetchedWalk;
+  hash160_t *loadedX;
+  hash160_t *loadedY;
 
   // Hash160 to key mapping
   Point Gp[10]; // Power of G
   Int   Kp[10]; // Power
-  Point pub[10][65536];
+  Int   *pub;
   Int   priv[10][65536];
 
 #ifdef WIN64

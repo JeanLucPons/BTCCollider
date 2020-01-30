@@ -34,8 +34,8 @@ HashTable::HashTable() {
 
 void HashTable::Reset() {
 
-  for (int h = 0; h < HASH_SIZE; h++) {
-    for(int i=0;i<E[h].nbItem;i++)
+  for (uint32_t h = 0; h < HASH_SIZE; h++) {
+    for(uint32_t i=0;i<E[h].nbItem;i++)
       free(E[h].items[i]);
     safe_free(E[h].items);
     E[h].maxItem = 0;
@@ -145,7 +145,7 @@ int HashTable::AddHash(hash160_t *start, hash160_t *end) {
       return COLLISION;
     }
   }
-  if (st < E[h].nbItem ) {
+  if (st < (int)E[h].nbItem ) {
     if (hashCollide(&GET(h, st)->end, end)) {
       if (hashCollide(&GET(h, st)->start, start)) {
         printf("\nFalse collision\n");
@@ -181,17 +181,39 @@ double HashTable::GetSizeMB() {
 }
 
 
-void HashTable::SaveTable(std::string filename) {
+void HashTable::SaveTable(FILE *f) {
 
-// TODO
+  for (uint32_t h = 0; h < HASH_SIZE; h++) {
+    fwrite(&E[h].nbItem, sizeof(uint32_t), 1, f);
+    fwrite(&E[h].maxItem, sizeof(uint32_t), 1, f);
+    for (uint32_t i = 0; i < E[h].nbItem; i++) {
+      fwrite(&E[h].items[i]->start, 20, 1, f);
+      fwrite(&E[h].items[i]->end, 20, 1, f);
+    }
+  }
 
 }
 
-void HashTable::LoadTable(std::string filename) {
+void HashTable::LoadTable(FILE *f) {
 
   Reset();
-  FILE *f;
-// TODO
+  for (uint32_t h = 0; h < HASH_SIZE; h++) {
+    fread(&E[h].nbItem, sizeof(uint32_t), 1, f);
+    fread(&E[h].maxItem, sizeof(uint32_t), 1, f);
+    if (E[h].maxItem > 0) {
+      // Allocate indexes
+      E[h].items = (ENTRY **)malloc(sizeof(ENTRY *) * E[h].maxItem);
+    }
+    for (uint32_t i = 0; i < E[h].nbItem; i++) {
+      ENTRY *e = (ENTRY *)malloc(sizeof(ENTRY));
+      fread(&e->start, 20, 1, f);
+      fread(&e->end, 20, 1, f);
+      E[h].items[i] = e;
+    }
+    totalItem += E[h].nbItem;
+  }
+
+  printf("HashTable::LoadTable(): %d items loaded\n",totalItem);
 
 }
 
@@ -220,7 +242,7 @@ void HashTable::PrintTable(int limit) {
   for (int h = 0; h < HASH_SIZE; h++) {
     if (E[h].nbItem > 0) {
       printf("ENTRY: %04X\n",h);
-      for (int i = 0; i < E[h].nbItem && curItem<limit; i++) {
+      for (uint32_t i = 0; i < E[h].nbItem && curItem<limit; i++) {
         //printf("%02d: S:%s\n", i, GetHashStr(&GET(h,i).start).c_str());
         //printf("    E:%s\n", GetHashStr(&GET(h, i).end).c_str());
         printf("%02d: E:%s\n", i, GetHashStr(&GET(h,i)->start).c_str());
@@ -235,19 +257,19 @@ void HashTable::PrintTable(int limit) {
 bool HashTable::compare(HashTable *ht) {
 
   if (ht->GetNbItem() != GetNbItem()) {
-    printf("Item number net equal !\n");
+    printf("Item number not equal !\n");
     return false;
   }
 
   for (int h = 0; h < HASH_SIZE; h++) {
     
     if (ht->E[h].nbItem != E[h].nbItem) {
-      printf("[H%04X] Item number net equal !\n",h);
+      printf("[H%04X] Item number not equal !\n",h);
       return false;
     }
 
     bool equal = true;
-    int i = 0;
+    uint32_t i = 0;
     while (equal && i < E[h].nbItem) {
       equal = (compareHash(&GET(h,i)->start , &ht->GET(h,i)->start)==0) &&
               (compareHash(&GET(h, i)->end, &ht->GET(h, i)->end) == 0);

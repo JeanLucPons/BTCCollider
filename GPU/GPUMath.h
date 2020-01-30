@@ -175,6 +175,18 @@ __device__ __constant__ uint64_t _beta2[] = { 0x3EC693D68E6AFA40ULL,0x630FB68AED
   (r)[2] = keys[8*((pos)*_64K + (h))+6]; \
   (r)[3] = keys[8*((pos)*_64K + (h))+7];}
 
+#define OutputHash(h1,h2) {\
+out[pos*ITEM_SIZE32 + 1] = ((uint32_t *)h1)[0]; \
+out[pos*ITEM_SIZE32 + 2] = ((uint32_t *)h1)[1]; \
+out[pos*ITEM_SIZE32 + 3] = ((uint32_t *)h1)[2]; \
+out[pos*ITEM_SIZE32 + 4] = ((uint32_t *)h1)[3]; \
+out[pos*ITEM_SIZE32 + 5] = ((uint32_t *)h1)[4]; \
+out[pos*ITEM_SIZE32 + 6] = ((uint32_t *)h2)[0]; \
+out[pos*ITEM_SIZE32 + 7] = ((uint32_t *)h2)[1]; \
+out[pos*ITEM_SIZE32 + 8] = ((uint32_t *)h2)[2]; \
+out[pos*ITEM_SIZE32 + 9] = ((uint32_t *)h2)[3]; \
+out[pos*ITEM_SIZE32 + 10] = ((uint32_t *)h2)[4];}
+
 // ---------------------------------------------------------------------------------------
 
 __device__ void LoadHash(uint16_t h[GPU_GRP_SIZE][12], uint64_t *a) {

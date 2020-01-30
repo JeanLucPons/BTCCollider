@@ -34,17 +34,22 @@ using namespace std;
 void printUsage() {
 
   printf("BTCCollider [-check] [-v] [-gpu]\n");
-  printf("            [-gpuId gpuId1[,gpuId2,...]] [-g gridSize1[,gridSize2,...]]\n");
+  printf("            [-gpuId gpuId1[,gpuId2,...]] [-g g1x,g1y[,g2x,g2y,...]]\n");
   printf("            [-o outputfile] [-s collisionSize] [-t nbThread] [-d dpBit]\n");
-  printf("            [-nosse] [-check]\n\n");
+  printf("            [-w workfile] [-i inputWorkFile] [-wi workInterval]\n");
+  printf("            [-e] [-check]\n\n");
   printf(" -v: Print version\n");
   printf(" -gpu: Enable gpu calculation\n");
   printf(" -o outputfile: Output results to the specified file\n");
   printf(" -gpu gpuId1,gpuId2,...: List of GPU(s) to use, default is 0\n");
-  printf(" -g gridSize1x,gridSize1y,gridSize1x,gridSize1y, ...: Specify GPU(s) kernel gridsize, default is 2*(MP),2*(Core/MP)\n");
+  printf(" -g g1x,g1y,g2x,g2y,...: Specify GPU(s) kernel gridsize, default is 2*(MP),2*(Core/MP)\n");
   printf(" -s: Specify size of the collision in bit (minimum 16,default is 40)\n");
   printf(" -d: Specify number of leading zeros for the DP method (default is auto)\n");
+  printf(" -e: Enable extra points (symetry and endomorphisms), reduce needed step by sqrt(2)\n");
   printf(" -t threadNumber: Specify number of CPU thread, default is number of core\n");
+  printf(" -w workfile: Specify file to save work into\n");
+  printf(" -i workfile: Specify file to load work from\n");
+  printf(" -wi workInterval: Periodic interval (in seconds) for saving work\n");
   printf(" -l: List cuda enabled devices\n");
   printf(" -check: Check CPU and GPU kernel vs CPU\n");
   exit(0);
@@ -123,12 +128,15 @@ int main(int argc, char* argv[]) {
   string outputFile = "";
   int nbCPUThread = Timer::getCoreNumber();
   bool tSpecified = false;
-  bool sse = true;
+  bool extraPts = false;
   bool checkFlag = false;
   uint32_t cSize = 40;
   uint64_t rekey = 0;
   Point startPuKey;
   startPuKey.Clear();
+  string workFile = "";
+  string iWorkFile = "";
+  uint32_t savePeriod = 60;
 
   while (a < argc) {
 
@@ -157,8 +165,8 @@ int main(int argc, char* argv[]) {
 #endif
       exit(0);
 
-    } else if (strcmp(argv[a], "-nosse") == 0) {
-      sse = false;
+    } else if (strcmp(argv[a], "-e") == 0) {
+      extraPts = true;
       a++;
     } else if (strcmp(argv[a], "-g") == 0) {
       a++;
@@ -168,11 +176,23 @@ int main(int argc, char* argv[]) {
       a++;
       outputFile = string(argv[a]);
       a++;
+    } else if (strcmp(argv[a], "-w") == 0) {
+      a++;
+      workFile = string(argv[a]);
+      a++;
+    } else if (strcmp(argv[a], "-i") == 0) {
+      a++;
+      iWorkFile = string(argv[a]);
+      a++;
     } else if (strcmp(argv[a], "-t") == 0) {
       a++;
       nbCPUThread = getInt("nbCPUThread",argv[a]);
       a++;
       tSpecified = true;
+    } else if (strcmp(argv[a], "-wi") == 0) {
+      a++;
+      savePeriod = getInt("savePeriod", argv[a]);
+      a++;
     } else if (strcmp(argv[a], "-s") == 0) {
       a++;
       cSize = getInt("collisionSize", argv[a]);
@@ -216,7 +236,7 @@ int main(int argc, char* argv[]) {
   if(nbCPUThread<0)
     nbCPUThread = 0;
 
-  BTCCollider *v = new BTCCollider(secp, gpuEnable, stop, outputFile, sse, cSize, dp);
+  BTCCollider *v = new BTCCollider(secp, gpuEnable, stop, outputFile, workFile, iWorkFile, savePeriod, cSize, dp, extraPts);
   if(checkFlag)
     v->Check(gpuId, gridSize);
   else
